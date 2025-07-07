@@ -1,3 +1,4 @@
-# GlucoSense-v1
-GlucoSense is an AI-powered web application designed to predict diabetes noninvasively using breath-based sensor data and physiological parameters. This tool leverages machine learning algorithms to classify individuals into three categories—non-diabetic, prediabetic, and highly diabetic—based on volatile organic compound (VOC) patterns in breath, along with body vitals and demographic details.
-
+# GlucoSense-v2
+GlucoSense is an AI-powered web application designed to monitor blood glucose levels and blood pressure noninvasively using breath-based sensor data and physiological parameters. 
+- Inputs: Age, Gender, SpO2, heart rate, and breath sample.
+- Output: Blood Pressure and Blood Glucose Level
