@@ -9,31 +9,57 @@ def load_model(file_path):
         model = pickle.load(my_file)
     return model
 
-def perform_diabetes_test(features):
-    model = load_model('models/stack.pkl')
-    test_label = model.predict(features)
-    if test_label == 0:
-        return "Non-diabetic"
-    elif test_label == 1:
-        return "Pre-diabetic"
-    else:
-        return "Highly diabetic"
+def extract_diabetes_features(test_data):
+    selector = load_model("models/selector.pkl")
+    scaler = load_model("models/corr_scaler.pkl")
+    normalizer = load_model(file_path='models/normalizer.pkl')
 
-def perform_feature_selection(test_data):
-    selector1 = load_model("models/selector.pkl")
-    selector2 = load_model("models/corr_scaler.pkl")
-    normalizer = load_model("models/normalizer.pkl")
+    selected_names = test_data.columns[selector.get_support()]
+    features = pd.DataFrame(data=selector.transform(test_data), columns=selected_names)
+    features = scaler.transform(features)
+    return normalizer.transform(features)
 
-    selected_names = test_data.columns[selector1.get_support()]
-    features = pd.DataFrame(data=selector1.transform(test_data), columns=selected_names)
+
+def extract_bp_features(test_data):
+    # Load the feature selector and scaler
+    selector = load_model("bp_models/bp_selector.pkl")
+    scaler = load_model("bp_models/bp_scaler.pkl")
+
+    # Select features using the selector
+    selected_names = test_data.columns[selector.get_support()]
+    features = pd.DataFrame(data=selector.transform(test_data), columns=selected_names)
+
+    # Scale the features
+    scaled_features = scaler.transform(features)
+    return scaled_features
+
+
+def perform_diabetes_test(test_data):
+    # Feature selection for diabetes test
+    features = extract_diabetes_features(test_data)
+
+    # Load the models
+    encoding = {0: "Low", 1: "Medium", 2: "High"}
+
+    stage_model = load_model('models/stage.pkl')
+    bgl_model = load_model('models/AdaBoost.pkl')
+
+    stage = stage_model.predict(features)[0]
+    bgl = bgl_model.predict(features)[0]
+
+    return encoding[stage], np.round(bgl, 2)
     
-    X_new = selector2.transform(features)
-    return normalizer.transform(X_new)
+def perform_bp_test(test_data):
+    # Perform feature selection for BP test
+    test_data = test_data.drop(columns=['maxBP', 'minBP'], errors='ignore', axis=1)
+    features = extract_bp_features(test_data)
 
-def perform_bgl_test(features):
-    bgl_model = load_model(file_path='models/AdaBoost.pkl')
-    bgl_value = bgl_model.predict(features)[0]
-    return np.round(bgl_value, 2)
+    # Load the models for BP prediction
+    max_model = load_model('bp_models/max.pkl')
+    min_model = load_model('bp_models/min.pkl')
+    max_value = max_model.predict(features)[0]
+    min_value = min_model.predict(features)[0]
+    return np.round(max_value), np.round(min_value)
 
 def remove_irrelevant_data(df):
     # Read the CSV file into a DataFrame, skipping the first 3 rows and setting the 4th row as header
